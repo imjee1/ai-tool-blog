@@ -1,0 +1,35 @@
+name: Daily AI tool post
+
+on:
+  schedule:
+    # 매일 UTC 23:00 = 한국시간(KST) 오전 8시
+    - cron: "0 23 * * *"
+  workflow_dispatch: {}  # 수동으로도 "Run workflow" 버튼으로 실행 가능
+
+permissions:
+  contents: write
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 파이썬 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 오늘의 글 생성
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python scripts/generate_post.py
+
+      - name: 변경사항 커밋 & 푸시
+        run: |
+          git config user.name "ai-tool-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add _posts
+          git diff --cached --quiet && echo "새 글 없음, 커밋 생략" || git commit -m "chore: 오늘의 AI 툴 자동 발행"
+          git push
