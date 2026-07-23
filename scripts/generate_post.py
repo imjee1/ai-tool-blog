@@ -170,7 +170,7 @@ def main():
         return
 
     raw = call_claude(stories)
-    fallback_title = f"{today.isoformat()} 오늘의 AI 툴 큐레이션"
+    fallback_title = f"{today.isoformat()} 오늘의 AI 큐레이션"
     fallback_description = f"{today.isoformat()} Hacker News AI 소식 큐레이션"
     title, description, body = parse_response(raw, fallback_title, fallback_description)
 
