@@ -1,0 +1,50 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+
+const title = '소개';
+const description = `${SITE_TITLE} 블로그 소개`;
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={title} description={description} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<article class="prose">
+				<h1>이 블로그는요</h1>
+				<p>
+					매일 아침, <a href="https://news.ycombinator.com/" target="_blank">Hacker News</a>에서 화제가 된 AI
+					툴과 제품을 자동으로 모아 개발자 시선으로 정리해서 올립니다.
+				</p>
+				<p>
+					전 과정이 자동화되어 있어요 — GitHub Actions가 매일 정해진 시간에 Hacker News API로 최근 AI 관련
+					인기 글을 수집하고, Claude API가 이를 바탕으로 한국어 큐레이션 글을 작성해서 자동으로 발행합니다.
+				</p>
+				<p>
+					소스 코드는 <a href="https://github.com/imjee1/ai-tool-blog" target="_blank">GitHub 저장소</a>에서
+					확인할 수 있습니다.
+				</p>
+			</article>
+		</main>
+		<Footer />
+	</body>
+</html>
+<style>
+	main {
+		width: calc(100% - 2em);
+		max-width: 100%;
+		margin: 0;
+	}
+	.prose {
+		width: 720px;
+		max-width: calc(100% - 2em);
+		margin: auto;
+		padding: 1em;
+	}
+</style>

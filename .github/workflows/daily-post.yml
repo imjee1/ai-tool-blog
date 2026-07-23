@@ -8,9 +8,15 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  generate-and-publish:
+  generate-and-build:
     runs-on: ubuntu-latest
     steps:
       - name: 저장소 체크아웃
@@ -30,6 +36,37 @@ jobs:
         run: |
           git config user.name "ai-tool-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add _posts
+          git add src/content/blog
           git diff --cached --quiet && echo "새 글 없음, 커밋 생략" || git commit -m "chore: 오늘의 AI 툴 자동 발행"
           git push
+
+      - name: Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: Astro 빌드
+        run: npm run build
+
+      - name: GitHub Pages 설정
+        uses: actions/configure-pages@v5
+
+      - name: 빌드 결과물 업로드
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: generate-and-build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: GitHub Pages에 배포
+        id: deployment
+        uses: actions/deploy-pages@v4

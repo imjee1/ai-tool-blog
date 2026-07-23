@@ -4,7 +4,7 @@
 동작 순서:
 1. Hacker News Algolia API에서 최근 24~48시간 내 "AI 툴/제품" 관련 글 수집 (API 키 불필요)
 2. Claude API에게 넘겨서 개발자 대상 한국어 큐레이션 글 작성 요청
-3. 결과를 _posts/YYYY-MM-DD-ai-tools.md 로 저장 (Jekyll이 이 폴더를 자동으로 읽어서 블로그에 반영)
+3. 결과를 src/content/blog/YYYY-MM-DD-ai-tools.md 로 저장 (Astro content collection이 이 폴더를 자동으로 읽어서 블로그에 반영)
 
 필요한 환경변수:
 - ANTHROPIC_API_KEY : Anthropic API 키 (GitHub repo secret으로 설정)
@@ -89,11 +89,14 @@ def call_claude(stories):
         "너는 개발자 대상 AI 뉴스레터를 매일 쓰는 에디터야. "
         "아래 Hacker News에서 오늘 화제가 된 AI 관련 글/제품 목록을 받아서, "
         "한국 개발자들이 읽기 좋은 블로그 포스트를 한국어로 작성해줘.\n\n"
-        "요구사항:\n"
-        "- 제목은 흥미롭게, 너무 낚시성은 금지\n"
+        "출력 형식은 반드시 아래 구조를 지켜:\n"
+        "1번째 줄: '# 제목' (흥미롭게, 너무 낚시성은 금지)\n"
+        "2번째 줄: 이 글 전체를 한 문장으로 요약한 설명 (블로그 미리보기용 description으로 쓰임, 40자 내외)\n"
+        "3번째 줄부터: 빈 줄 하나 띄우고 본문 시작\n\n"
+        "본문 요구사항:\n"
         "- 각 항목마다: 무엇인지 2~3문장 요약 + 왜 주목할만한지 1문장 + 원문 링크\n"
         "- 전체 서두에 오늘의 트렌드를 2~3문장으로 정리\n"
-        "- 마크다운 형식으로, Jekyll frontmatter 없이 본문만 작성 (frontmatter는 스크립트가 별도로 붙임)\n"
+        "- 마크다운 형식으로 본문만 작성 (frontmatter는 스크립트가 별도로 붙임)\n"
         "- 과장광고체 금지, 담백하고 신뢰가는 톤\n"
         "- 실제 제공된 항목에 대해서만 쓰고, 없는 내용을 지어내지 말 것"
     )
@@ -103,7 +106,7 @@ def call_claude(stories):
     body = json.dumps(
         {
             "model": "claude-sonnet-5",
-            "max_tokens": 2000,
+            "max_tokens": 4096,
             "system": system_prompt,
             "messages": [{"role": "user", "content": user_prompt}],
         }
@@ -128,14 +131,34 @@ def call_claude(stories):
     return "\n".join(text_parts).strip()
 
 
-def extract_title(markdown_body, fallback):
-    """생성된 본문 첫 줄이 '# 제목' 형태면 그걸 title로 쓰고 본문에서는 제거"""
+def parse_response(markdown_body, fallback_title, fallback_description):
+    """생성된 본문에서 '# 제목' / 설명 줄 / 본문을 분리"""
     lines = markdown_body.splitlines()
+    title = fallback_title
+    description = fallback_description
+    idx = 0
+
     if lines and lines[0].startswith("# "):
         title = lines[0][2:].strip()
-        rest = "\n".join(lines[1:]).lstrip("\n")
-        return title, rest
-    return fallback, markdown_body
+        idx = 1
+
+    while idx < len(lines) and not lines[idx].strip():
+        idx += 1
+
+    if idx < len(lines):
+        description = lines[idx].strip()
+        idx += 1
+
+    while idx < len(lines) and not lines[idx].strip():
+        idx += 1
+
+    body = "\n".join(lines[idx:]).lstrip("\n")
+    return title, description, body
+
+
+def yaml_single_quote(value):
+    """YAML 단일 인용 문자열로 안전하게 이스케이프"""
+    return "'" + value.replace("'", "''") + "'"
 
 
 def main():
@@ -146,23 +169,23 @@ def main():
         print("오늘은 조건에 맞는 글이 없어서 포스트를 건너뜁니다.")
         return
 
-    body = call_claude(stories)
+    raw = call_claude(stories)
     fallback_title = f"{today.isoformat()} 오늘의 AI 툴 큐레이션"
-    title, body = extract_title(body, fallback_title)
+    fallback_description = f"{today.isoformat()} Hacker News AI 소식 큐레이션"
+    title, description, body = parse_response(raw, fallback_title, fallback_description)
 
     safe_slug = "ai-tools"
-    filename = f"_posts/{today.isoformat()}-{safe_slug}.md"
+    filename = f"src/content/blog/{today.isoformat()}-{safe_slug}.md"
 
     frontmatter = (
         "---\n"
-        "layout: post\n"
-        f"title: \"{title}\"\n"
-        f"date: {today.isoformat()} 08:00:00 +0900\n"
-        "categories: [ai-tools]\n"
+        f"title: {yaml_single_quote(title)}\n"
+        f"description: {yaml_single_quote(description)}\n"
+        f"pubDate: '{today.strftime('%b %d %Y')}'\n"
         "---\n\n"
     )
 
-    os.makedirs("_posts", exist_ok=True)
+    os.makedirs("src/content/blog", exist_ok=True)
     with open(filename, "w", encoding="utf-8") as f:
         f.write(frontmatter + body + "\n")
 

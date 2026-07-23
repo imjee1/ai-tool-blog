@@ -1,5 +1,5 @@
 .claude/
-_site/
-.jekyll-cache/
-.bundle/
-vendor/
+node_modules/
+dist/
+.astro/
+npm-debug.log*
