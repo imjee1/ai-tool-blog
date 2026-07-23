@@ -10,6 +10,13 @@ const base = import.meta.env.BASE_URL;
 		<a href={`${base}rss.xml`}>RSS</a>
 	</div>
 	<p class="copyright">&copy; {today.getFullYear()} 오늘의 AI</p>
+	<p class="hits">
+		<img
+			src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fimjee1.github.io%2Fai-tool-blog%2F&label=visitors&countColor=%235b5bf6&style=flat"
+			alt="방문자 수"
+			loading="lazy"
+		/>
+	</p>
 </footer>
 <style>
 	footer {
@@ -36,5 +43,12 @@ const base = import.meta.env.BASE_URL;
 	.copyright {
 		margin: 0;
 		font-size: 0.85em;
+	}
+	.hits {
+		margin: 0.8em 0 0 0;
+	}
+	.hits img {
+		border-radius: 4px;
+		vertical-align: middle;
 	}
 </style>
