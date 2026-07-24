@@ -17,6 +17,8 @@ import datetime
 import urllib.request
 import urllib.parse
 
+KST = datetime.timezone(datetime.timedelta(hours=9))
+
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 if not ANTHROPIC_API_KEY:
     print("ERROR: ANTHROPIC_API_KEY 환경변수가 없습니다.", file=sys.stderr)
@@ -162,7 +164,10 @@ def yaml_single_quote(value):
 
 
 def main():
-    today = datetime.date.today()
+    # GitHub Actions 러너는 UTC로 도는데, 크론이 KST 오전 8시에 맞춰져 있어서
+    # 시스템 로컬 날짜(UTC)를 쓰면 실제로는 다음날 아침인데도 전날 날짜로 계산돼버림.
+    # 그래서 항상 KST 기준으로 오늘 날짜를 명시적으로 계산한다.
+    today = datetime.datetime.now(KST).date()
     stories = fetch_hn_stories()
 
     if not stories:
